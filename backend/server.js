@@ -1,6 +1,11 @@
 const express = require("express");
 const cors = require("cors");
+
 const authRoutes = require("./Routes/authRoutes");
+const itemRoutes = require("./Routes/itemRoutes");
+const postRoutes = require("./Routes/postRoutes");
+const friendRoutes = require("./Routes/friendRoutes");
+
 const pool = require("./db/db");
 const requireAuth = require("./Middleware/authMiddleware");
 const app = express();
@@ -12,11 +17,11 @@ app.get("/", (req, res) => {
   res.json({ message: "Closet API is running" });
 });
 
-app.get("/api/protected-test", requireAuth, (req, res) => {
-  res.json({ message: `You are logged in as user ${req.userId}` });
-});
-
 app.use("/api/auth", authRoutes);
+app.use("/api/items", requireAuth, itemRoutes);
+app.use("/api/posts", requireAuth, postRoutes);
+app.use("/api/friends", friendRoutes);
+
 
 const PORT = process.env.PORT;
 

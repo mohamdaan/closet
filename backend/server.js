@@ -5,6 +5,8 @@ const authRoutes = require("./Routes/authRoutes");
 const itemRoutes = require("./Routes/itemRoutes");
 const postRoutes = require("./Routes/postRoutes");
 const friendRoutes = require("./Routes/friendRoutes");
+const messageRoutes = require("./Routes/messageRouter");
+const userRoutes = require("./Routes/userRoutes");
 
 const pool = require("./db/db");
 const requireAuth = require("./Middleware/authMiddleware");
@@ -21,7 +23,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/items", requireAuth, itemRoutes);
 app.use("/api/posts", requireAuth, postRoutes);
 app.use("/api/friends", friendRoutes);
-
+app.use("/api/messages", messageRoutes);
+app.use("/api/users", userRoutes);
 
 const PORT = process.env.PORT;
 

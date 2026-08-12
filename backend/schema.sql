@@ -76,3 +76,15 @@ create table comments (
    content    text not null,
    created_at timestamp not null default now()
 );
+
+create table messages (
+   id              serial primary key,
+   conversation_id integer not null
+      references conversations ( id )
+         on delete cascade,
+   sender_id       integer not null
+      references users ( id )
+         on delete cascade,
+   content         text not null,
+   created_at      timestamp not null default now()
+);

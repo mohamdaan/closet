@@ -40,16 +40,23 @@ const getFeed = async (req, res) => {
     const result = await pool.query(
       `SELECT posts.id, posts.caption, posts.created_at,
               users.id AS user_id, users.username, users.name,
-              items.id AS item_id, items.name AS item_name, items.brand, items.image_url
+              items.id AS item_id, items.name AS item_name, items.brand, items.image_url,
+              COUNT(likes.id) AS like_count,
+              EXISTS (
+                SELECT 1 FROM likes
+                WHERE likes.post_id = posts.id AND likes.user_id = $1
+              ) AS liked_by_me
        FROM posts
        JOIN users ON posts.user_id = users.id
        JOIN items ON posts.item_id = items.id
+       LEFT JOIN likes ON likes.post_id = posts.id
        WHERE posts.user_id = $1
           OR posts.user_id IN (
             SELECT receiver_id FROM friendships WHERE requester_id = $1 AND status = 'accepted'
             UNION
             SELECT requester_id FROM friendships WHERE receiver_id = $1 AND status = 'accepted'
           )
+       GROUP BY posts.id, users.id, items.id
        ORDER BY posts.created_at DESC`,
       [userId]
     );

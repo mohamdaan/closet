@@ -12,7 +12,6 @@ const getOrCreateConversation = async (req, res) => {
     return res.status(400).json({ error: "Cannot message yourself" });
   }
 
-  // Always store the smaller id first so (1,2) and (2,1) never both exist
   const userOne = Math.min(userId, Number(other_user_id));
   const userTwo = Math.max(userId, Number(other_user_id));
 
@@ -84,7 +83,7 @@ const getMessages = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, sender_id, content, created_at
+      `SELECT id, sender_id, content, created_at, read_at
        FROM messages
        WHERE conversation_id = $1
        ORDER BY created_at ASC`,
@@ -104,13 +103,18 @@ const getConversations = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT conversations.id,
-              users.id AS other_user_id, users.name, users.username
+              users.id AS other_user_id, users.name, users.username,
+              COUNT(messages.id) FILTER (
+                WHERE messages.sender_id != $1 AND messages.read_at IS NULL
+              ) AS unread_count
        FROM conversations
        JOIN users ON users.id = CASE
          WHEN conversations.user_one_id = $1 THEN conversations.user_two_id
          ELSE conversations.user_one_id
        END
+       LEFT JOIN messages ON messages.conversation_id = conversations.id
        WHERE conversations.user_one_id = $1 OR conversations.user_two_id = $1
+       GROUP BY conversations.id, users.id
        ORDER BY conversations.created_at DESC`,
       [userId]
     );
@@ -122,9 +126,29 @@ const getConversations = async (req, res) => {
   }
 };
 
+const markAsRead = async (req, res) => {
+  const userId = req.userId;
+  const { id: conversationId } = req.params;
+
+  try {
+    await pool.query(
+      `UPDATE messages
+       SET read_at = NOW()
+       WHERE conversation_id = $1 AND sender_id != $2 AND read_at IS NULL`,
+      [conversationId, userId]
+    );
+
+    res.json({ message: "Marked as read" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
 module.exports = {
   getOrCreateConversation,
   sendMessage,
   getMessages,
   getConversations,
+  markAsRead,
 };

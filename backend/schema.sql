@@ -88,3 +88,5 @@ create table messages (
    content         text not null,
    created_at      timestamp not null default now()
 );
+
+ALTER TABLE messages ADD COLUMN read_at TIMESTAMP DEFAULT NULL;

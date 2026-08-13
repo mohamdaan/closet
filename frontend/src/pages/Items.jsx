@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import ItemForm from "../components/ItemForm";
+import PostForm from "../components/PostForm";
 
 function Items() {
   const { token } = useAuth();
@@ -10,6 +11,7 @@ function Items() {
   const [error, setError] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [postingItem, setPostingItem] = useState(null);
 
   const authHeader = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -55,6 +57,19 @@ function Items() {
     }
   };
 
+  const handlePost = async (caption) => {
+    try {
+      await api.post(
+        "/posts",
+        { item_id: postingItem.id, caption },
+        authHeader
+      );
+      setPostingItem(null);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to create post");
+    }
+  };
+
   const filteredItems = items.filter((item) => item.item_type === activeTab);
 
   return (
@@ -91,6 +106,14 @@ function Items() {
         />
       )}
 
+      {postingItem && (
+        <PostForm
+          item={postingItem}
+          onSubmit={handlePost}
+          onCancel={() => setPostingItem(null)}
+        />
+      )}
+
       {filteredItems.length === 0 ? (
         <p>No items yet.</p>
       ) : (
@@ -110,6 +133,7 @@ function Items() {
               {item.brand} — {item.category}
             </p>
             {item.description && <p>{item.description}</p>}
+            <button onClick={() => setPostingItem(item)}>Post</button>
             <button onClick={() => setEditingItem(item)}>Edit</button>
             <button onClick={() => handleDelete(item.id)}>Delete</button>
           </div>

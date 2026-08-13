@@ -4,6 +4,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Feed from "./pages/Feed";
 import Items from "./pages/Items";
+import Friends from "./pages/Friends";
+import Messages from "./pages/Messages";
+import Conversation from "./pages/Conversation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 
@@ -33,6 +36,30 @@ function App() {
           element={
             <ProtectedRoute>
               <Items />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <ProtectedRoute>
+              <Friends />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <Messages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages/:id"
+          element={
+            <ProtectedRoute>
+              <Conversation />
             </ProtectedRoute>
           }
         />

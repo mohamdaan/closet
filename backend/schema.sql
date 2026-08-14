@@ -4,7 +4,8 @@ create table users (
    username   varchar(50) unique not null,
    email      varchar(255) unique not null,
    password   varchar(255) not null,
-   created_at timestamp not null default now()
+   created_at timestamp not null default now(),
+   bio        text
 );
 
 create table friendships (
@@ -77,6 +78,20 @@ create table comments (
    created_at timestamp not null default now()
 );
 
+create table conversations (
+   id          serial primary key,
+   user_one_id integer not null
+      references users ( id )
+         on delete cascade,
+   user_two_id integer not null
+      references users ( id )
+         on delete cascade,
+   created_at  timestamp not null default now(),
+   unique ( user_one_id,
+            user_two_id ),
+   check ( user_one_id != user_two_id )
+);
+
 create table messages (
    id              serial primary key,
    conversation_id integer not null
@@ -86,8 +101,15 @@ create table messages (
       references users ( id )
          on delete cascade,
    content         text not null,
-   created_at      timestamp not null default now()
+   created_at      timestamp not null default now(),
+   read_at         timestamp
 );
 
-ALTER TABLE messages ADD COLUMN read_at TIMESTAMP DEFAULT NULL;
-ALTER TABLE users ADD COLUMN bio TEXT;
+create index idx_posts_user_id on
+   posts (
+      user_id
+   );
+create index idx_items_user_id on
+   items (
+      user_id
+   );

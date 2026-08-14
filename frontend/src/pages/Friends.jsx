@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -154,9 +154,9 @@ function Friends() {
               key={f.id}
               style={{ display: "flex", gap: "1rem", alignItems: "center" }}
             >
-              <span>
+              <Link to={`/profile/${f.id}`}>
                 {f.name} (@{f.username})
-              </span>
+              </Link>
               <button onClick={() => handleMessage(f.id)}>Message</button>
             </div>
           ))

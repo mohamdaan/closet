@@ -90,3 +90,4 @@ create table messages (
 );
 
 ALTER TABLE messages ADD COLUMN read_at TIMESTAMP DEFAULT NULL;
+ALTER TABLE users ADD COLUMN bio TEXT;

@@ -9,6 +9,8 @@ import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
+import Profile from "./pages/Profile";
+import FriendsList from "./pages/FriendsList";
 
 function Home() {
   const { token } = useAuth();
@@ -60,6 +62,30 @@ function App() {
           element={
             <ProtectedRoute>
               <Conversation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:id"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/friends/user/:id"
+          element={
+            <ProtectedRoute>
+              <FriendsList />
             </ProtectedRoute>
           }
         />

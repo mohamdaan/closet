@@ -1,16 +1,9 @@
 const pool = require("../db/db");
 
 const createItem = async (req, res) => {
-  const userId = req.userId; // comes from requireAuth, not from the client
-  const {
-    name,
-    brand,
-    category,
-    description,
-    image_url,
-    product_url,
-    item_type,
-  } = req.body;
+  const userId = req.userId;
+  const { name, brand, category, description, product_url, item_type } =
+    req.body;
 
   if (!name || !item_type) {
     return res.status(400).json({ error: "Name and item_type are required" });
@@ -21,6 +14,8 @@ const createItem = async (req, res) => {
       .status(400)
       .json({ error: "item_type must be WARDROBE or WISHLIST" });
   }
+
+  const image_url = req.file ? req.file.path : null;
 
   try {
     const result = await pool.query(
@@ -86,15 +81,8 @@ const deleteItem = async (req, res) => {
 const editItem = async (req, res) => {
   const userId = req.userId;
   const { id } = req.params;
-  const {
-    name,
-    brand,
-    category,
-    description,
-    image_url,
-    product_url,
-    item_type,
-  } = req.body;
+  const { name, brand, category, description, product_url, item_type } =
+    req.body;
 
   if (item_type && !["WARDROBE", "WISHLIST"].includes(item_type)) {
     return res
@@ -102,18 +90,20 @@ const editItem = async (req, res) => {
       .json({ error: "item_type must be WARDROBE or WISHLIST" });
   }
 
+  const image_url = req.file ? req.file.path : null;
+
   try {
     const result = await pool.query(
       `UPDATE items
-         SET name = COALESCE($1, name),
-             brand = COALESCE($2, brand),
-             category = COALESCE($3, category),
-             description = COALESCE($4, description),
-             image_url = COALESCE($5, image_url),
-             product_url = COALESCE($6, product_url),
-             item_type = COALESCE($7, item_type)
-         WHERE id = $8 AND user_id = $9
-         RETURNING *`,
+       SET name = COALESCE($1, name),
+           brand = COALESCE($2, brand),
+           category = COALESCE($3, category),
+           description = COALESCE($4, description),
+           image_url = COALESCE($5, image_url),
+           product_url = COALESCE($6, product_url),
+           item_type = COALESCE($7, item_type)
+       WHERE id = $8 AND user_id = $9
+       RETURNING *`,
       [
         name,
         brand,

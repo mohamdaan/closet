@@ -64,12 +64,21 @@ const getProfile = async (req, res) => {
     if (isSelf || isFriend) {
       const postsResult = await pool.query(
         `SELECT posts.id, posts.caption, posts.created_at,
-                items.name AS item_name, items.brand
+                items.name AS item_name, items.brand, items.image_url,
+                COUNT(DISTINCT likes.id) AS like_count,
+                COUNT(DISTINCT comments.id) AS comment_count,
+                EXISTS (
+                  SELECT 1 FROM likes
+                  WHERE likes.post_id = posts.id AND likes.user_id = $2
+                ) AS liked_by_me
          FROM posts
          JOIN items ON posts.item_id = items.id
+         LEFT JOIN likes ON likes.post_id = posts.id
+         LEFT JOIN comments ON comments.post_id = posts.id
          WHERE posts.user_id = $1
+         GROUP BY posts.id, items.id
          ORDER BY posts.created_at DESC`,
-        [profileId]
+        [profileId, requesterId]
       );
       posts = postsResult.rows;
     }
@@ -107,7 +116,5 @@ const updateProfile = async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 };
-
-
 
 module.exports = { searchUsers, getProfile, updateProfile };

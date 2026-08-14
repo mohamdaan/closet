@@ -14,6 +14,12 @@ function Items() {
   const [postingItem, setPostingItem] = useState(null);
 
   const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+  const multipartHeader = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+  };
 
   const fetchItems = async () => {
     try {
@@ -30,7 +36,7 @@ function Items() {
 
   const handleAdd = async (formData) => {
     try {
-      await api.post("/items", formData, authHeader);
+      await api.post("/items", formData, multipartHeader);
       setShowAddForm(false);
       fetchItems();
     } catch (err) {
@@ -40,7 +46,7 @@ function Items() {
 
   const handleEdit = async (formData) => {
     try {
-      await api.patch(`/items/${editingItem.id}`, formData, authHeader);
+      await api.patch(`/items/${editingItem.id}`, formData, multipartHeader);
       setEditingItem(null);
       fetchItems();
     } catch (err) {
@@ -51,7 +57,7 @@ function Items() {
   const handleDelete = async (id) => {
     try {
       await api.delete(`/items/${id}`, authHeader);
-      fetchItems();
+      setItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       setError(err.response?.data?.error || "Failed to delete item");
     }
@@ -73,26 +79,43 @@ function Items() {
   const filteredItems = items.filter((item) => item.item_type === activeTab);
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <h2>My Items</h2>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold text-slate-800 mb-6">My Items</h1>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+      <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => setActiveTab("WARDROBE")}
-          style={{ fontWeight: activeTab === "WARDROBE" ? "bold" : "normal" }}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === "WARDROBE"
+              ? "bg-indigo-600 text-white"
+              : "bg-white text-slate-600 border border-slate-200 hover:border-indigo-300"
+          }`}
         >
           Wardrobe
         </button>
         <button
           onClick={() => setActiveTab("WISHLIST")}
-          style={{ fontWeight: activeTab === "WISHLIST" ? "bold" : "normal" }}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === "WISHLIST"
+              ? "bg-indigo-600 text-white"
+              : "bg-white text-slate-600 border border-slate-200 hover:border-indigo-300"
+          }`}
         >
           Wishlist
         </button>
-        <button onClick={() => setShowAddForm(true)}>+ Add Item</button>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="ml-auto px-4 py-2 rounded-lg font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-colors"
+        >
+          + Add Item
+        </button>
       </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && (
+        <p className="mb-4 px-4 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm">
+          {error}
+        </p>
+      )}
 
       {showAddForm && (
         <ItemForm onSubmit={handleAdd} onCancel={() => setShowAddForm(false)} />
@@ -115,29 +138,63 @@ function Items() {
       )}
 
       {filteredItems.length === 0 ? (
-        <p>No items yet.</p>
+        <p className="text-slate-500">No items yet.</p>
       ) : (
-        filteredItems.map((item) => (
-          <div
-            key={item.id}
-            style={{
-              border: "1px solid gray",
-              margin: "10px 0",
-              padding: "10px",
-            }}
-          >
-            <p>
-              <strong>{item.name}</strong>
-            </p>
-            <p>
-              {item.brand} — {item.category}
-            </p>
-            {item.description && <p>{item.description}</p>}
-            <button onClick={() => setPostingItem(item)}>Post</button>
-            <button onClick={() => setEditingItem(item)}>Edit</button>
-            <button onClick={() => handleDelete(item.id)}>Delete</button>
-          </div>
-        ))
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {filteredItems.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+            >
+              {item.image_url ? (
+                <div className="w-full h-48 bg-slate-100 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={item.image_url}
+                    alt={item.name}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-48 bg-slate-100 flex items-center justify-center text-slate-400 text-sm">
+                  No image
+                </div>
+              )}
+
+              <div className="p-4">
+                <p className="font-semibold text-slate-800">{item.name}</p>
+                <p className="text-sm text-slate-500">
+                  {item.brand} — {item.category}
+                </p>
+                {item.description && (
+                  <p className="text-sm text-slate-600 mt-1">
+                    {item.description}
+                  </p>
+                )}
+
+                <div className="flex gap-2 mt-3 text-sm">
+                  <button
+                    onClick={() => setPostingItem(item)}
+                    className="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-medium transition-colors"
+                  >
+                    Post
+                  </button>
+                  <button
+                    onClick={() => setEditingItem(item)}
+                    className="px-3 py-1 rounded-lg bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="px-3 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 font-medium transition-colors ml-auto"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -5,12 +5,13 @@ import Register from "./pages/Register";
 import Feed from "./pages/Feed";
 import Items from "./pages/Items";
 import Friends from "./pages/Friends";
+import FriendsList from "./pages/FriendsList";
 import Messages from "./pages/Messages";
 import Conversation from "./pages/Conversation";
+import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
-import Profile from "./pages/Profile";
-import FriendsList from "./pages/FriendsList";
+import PublicOnlyRoute from "./components/PublicOnlyRoute";
 
 function Home() {
   const { token } = useAuth();
@@ -19,12 +20,26 @@ function Home() {
 
 function App() {
   return (
-    <>
+    <div className="min-h-screen bg-slate-50">
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/login"
+          element={
+            <PublicOnlyRoute>
+              <Login />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicOnlyRoute>
+              <Register />
+            </PublicOnlyRoute>
+          }
+        />
         <Route
           path="/feed"
           element={
@@ -46,6 +61,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Friends />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/friends/user/:id"
+          element={
+            <ProtectedRoute>
+              <FriendsList />
             </ProtectedRoute>
           }
         />
@@ -81,16 +104,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/friends/user/:id"
-          element={
-            <ProtectedRoute>
-              <FriendsList />
-            </ProtectedRoute>
-          }
-        />
       </Routes>
-    </>
+    </div>
   );
 }
 

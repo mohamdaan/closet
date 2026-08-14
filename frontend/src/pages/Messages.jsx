@@ -24,43 +24,35 @@ function Messages() {
   }, [token]);
 
   return (
-    <div style={{ padding: "1rem" }}>
-      <h2>Messages</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold text-slate-800 mb-6">Messages</h1>
+
+      {error && (
+        <p className="mb-4 px-4 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm">{error}</p>
+      )}
 
       {conversations.length === 0 ? (
-        <p>No conversations yet.</p>
+        <p className="text-slate-500">No conversations yet.</p>
       ) : (
-        conversations.map((c) => (
-          <Link
-            key={c.id}
-            to={`/messages/${c.id}`}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px",
-              borderBottom: "1px solid gray",
-              textDecoration: "none",
-              color: "inherit",
-            }}
-          >
-            <span><strong>{c.name}</strong> (@{c.username})</span>
-            {Number(c.unread_count) > 0 && (
-              <span
-                style={{
-                  background: "red",
-                  color: "white",
-                  borderRadius: "50%",
-                  padding: "2px 8px",
-                  fontSize: "0.8rem",
-                }}
-              >
-                {c.unread_count}
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm divide-y divide-slate-100">
+          {conversations.map((c) => (
+            <Link
+              key={c.id}
+              to={`/messages/${c.id}`}
+              className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors"
+            >
+              <span className="text-slate-700">
+                <span className="font-semibold">{c.name}</span>{" "}
+                <span className="text-slate-400">(@{c.username})</span>
               </span>
-            )}
-          </Link>
-        ))
+              {Number(c.unread_count) > 0 && (
+                <span className="bg-rose-500 text-white text-xs font-semibold rounded-full px-2 py-0.5">
+                  {c.unread_count}
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );

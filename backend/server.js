@@ -7,6 +7,7 @@ const postRoutes = require("./Routes/postRoutes");
 const friendRoutes = require("./Routes/friendRoutes");
 const messageRoutes = require("./Routes/messageRouter");
 const userRoutes = require("./Routes/userRoutes");
+const { generalLimiter } = require("./Middleware/rateLimiter");
 
 const pool = require("./db/db");
 const requireAuth = require("./Middleware/authMiddleware");
@@ -14,6 +15,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(generalLimiter);
 
 app.get("/", (req, res) => {
   res.json({ message: "Closet API is running" });

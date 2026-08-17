@@ -121,3 +121,12 @@ create index idx_items_user_id on
     suggestion_text TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE chat_messages (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    outfit_item_ids INTEGER[],
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);

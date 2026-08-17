@@ -10,7 +10,7 @@ const getSuggestions = async (req, res) => {
 
   try {
     const itemsResult = await pool.query(
-      `SELECT id, name, brand, category, description
+      `SELECT id, name, brand, category, description, image_url
        FROM items
        WHERE user_id = $1 AND item_type = 'WARDROBE'`,
       [userId]
@@ -19,7 +19,9 @@ const getSuggestions = async (req, res) => {
     const items = itemsResult.rows;
 
     if (items.length === 0) {
-      return res.status(400).json({ error: "Add some items to your wardrobe first" });
+      return res
+        .status(400)
+        .json({ error: "Add some items to your wardrobe first" });
     }
 
     const pastResult = await pool.query(
@@ -37,12 +39,20 @@ const getSuggestions = async (req, res) => {
     );
 
     const itemsList = items
-      .map((item) => `[id:${item.id}] ${item.name} (${item.brand || "no brand"}, ${item.category || "uncategorized"})`)
+      .map(
+        (item) =>
+          `[id:${item.id}] ${item.name} (${item.brand || "no brand"}, ${
+            item.category || "uncategorized"
+          })`
+      )
       .join("\n");
 
-    const avoidanceText = pastCombinations.length > 0
-      ? `\n\nAvoid repeating these exact combinations I've already been shown:\n${pastCombinations.map((c) => `- ${c}`).join("\n")}`
-      : "";
+    const avoidanceText =
+      pastCombinations.length > 0
+        ? `\n\nAvoid repeating these exact combinations I've already been shown:\n${pastCombinations
+            .map((c) => `- ${c}`)
+            .join("\n")}`
+        : "";
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -58,14 +68,19 @@ const getSuggestions = async (req, res) => {
 
     const responseText = completion.choices[0].message.content;
 
-    const outfitBlocks = responseText.split(/OUTFIT \d+/).filter((block) => block.trim());
+    const outfitBlocks = responseText
+      .split(/OUTFIT \d+/)
+      .filter((block) => block.trim());
 
     const outfits = outfitBlocks.map((block) => {
       const itemsMatch = block.match(/ITEMS:\s*([\d,\s]+)/);
       const descMatch = block.match(/DESCRIPTION:\s*(.+)/s);
 
       const ids = itemsMatch
-        ? itemsMatch[1].split(",").map((id) => parseInt(id.trim())).filter(Boolean)
+        ? itemsMatch[1]
+            .split(",")
+            .map((id) => parseInt(id.trim()))
+            .filter(Boolean)
         : [];
 
       return {
@@ -91,4 +106,116 @@ const getSuggestions = async (req, res) => {
   }
 };
 
-module.exports = { getSuggestions };
+const chat = async (req, res) => {
+  const userId = req.userId;
+  const { content } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ error: "Message content is required" });
+  }
+
+  try {
+    await pool.query(
+      `INSERT INTO chat_messages (user_id, role, content) VALUES ($1, 'user', $2)`,
+      [userId, content]
+    );
+
+    const historyResult = await pool.query(
+      `SELECT role, content FROM chat_messages WHERE user_id = $1 ORDER BY created_at ASC`,
+      [userId]
+    );
+
+    const messages = historyResult.rows;
+
+    const itemsResult = await pool.query(
+      `SELECT id, name, brand, category, description, image_url
+       FROM items
+       WHERE user_id = $1 AND item_type = 'WARDROBE'`,
+      [userId]
+    );
+
+    const items = itemsResult.rows;
+
+    const itemsList = items
+      .map(
+        (item) =>
+          `[id:${item.id}] ${item.name} (${item.brand || "no brand"}, ${
+            item.category || "uncategorized"
+          })`
+      )
+      .join("\n");
+
+    const systemPrompt = `You are a friendly personal stylist chatbot. The user's wardrobe (each item labeled with its id) is:\n${itemsList}\n\nWhen you suggest a specific outfit, always end your reply with a line in this exact format so the app can display it:\nOUTFIT_ITEMS: [comma-separated item ids, e.g. 3,7]\n\nOnly include that line when you're recommending a specific combination of items. For general conversation or questions, just reply normally without that line.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 800,
+      temperature: 0.8,
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
+    });
+
+    const replyText = completion.choices[0].message.content;
+
+    const outfitMatch = replyText.match(/OUTFIT_ITEMS:\s*([\d,\s]+)/);
+    let outfitItems = [];
+
+    if (outfitMatch) {
+      const ids = outfitMatch[1]
+        .split(",")
+        .map((id) => parseInt(id.trim()))
+        .filter(Boolean);
+      const itemsById = Object.fromEntries(
+        items.map((item) => [item.id, item])
+      );
+      outfitItems = ids.map((id) => itemsById[id]).filter(Boolean);
+    }
+
+    const displayText = replyText.replace(/OUTFIT_ITEMS:.*$/s, "").trim();
+
+    const outfitItemIds = outfitItems.map((item) => item.id);
+
+    await pool.query(
+      `INSERT INTO chat_messages (user_id, role, content, outfit_item_ids) VALUES ($1, 'assistant', $2, $3)`,
+      [userId, displayText, outfitItemIds.length > 0 ? outfitItemIds : null]
+    );
+
+    res.json({ reply: displayText, outfitItems });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to get response" });
+  }
+};
+
+const getChatHistory = async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const messagesResult = await pool.query(
+      `SELECT id, role, content, outfit_item_ids, created_at FROM chat_messages WHERE user_id = $1 ORDER BY created_at ASC`,
+      [userId]
+    );
+
+    const itemsResult = await pool.query(
+      `SELECT id, name, brand, category, image_url FROM items WHERE user_id = $1`,
+      [userId]
+    );
+
+    const itemsById = Object.fromEntries(
+      itemsResult.rows.map((item) => [item.id, item])
+    );
+
+    const messages = messagesResult.rows.map((msg) => ({
+      ...msg,
+      outfitItems: msg.outfit_item_ids
+        ? msg.outfit_item_ids.map((id) => itemsById[id]).filter(Boolean)
+        : [],
+    }));
+
+    res.json(messages);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+module.exports = { getSuggestions, chat, getChatHistory };

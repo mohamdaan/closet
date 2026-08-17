@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import ItemForm from "../components/ItemForm";
@@ -6,14 +7,13 @@ import PostForm from "../components/PostForm";
 
 function Items() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [activeTab, setActiveTab] = useState("WARDROBE");
   const [error, setError] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [postingItem, setPostingItem] = useState(null);
-  const [suggestions, setSuggestions] = useState(null);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const authHeader = { headers: { Authorization: `Bearer ${token}` } };
   const multipartHeader = {
@@ -78,20 +78,6 @@ function Items() {
     }
   };
 
-  const handleGetSuggestions = async () => {
-    setLoadingSuggestions(true);
-    setSuggestions(null);
-    setError("");
-    try {
-      const res = await api.post("/stylist/suggest", {}, authHeader);
-      setSuggestions(res.data.outfits);
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to get suggestions");
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  };
-
   const filteredItems = items.filter((item) => item.item_type === activeTab);
 
   return (
@@ -120,11 +106,10 @@ function Items() {
           Wishlist
         </button>
         <button
-          onClick={handleGetSuggestions}
-          disabled={loadingSuggestions}
-          className="px-4 py-2 rounded-lg font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors disabled:opacity-50"
+          onClick={() => navigate("/stylist")}
+          className="px-4 py-2 rounded-lg font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors"
         >
-          {loadingSuggestions ? "Thinking..." : "✨ Get Outfit Ideas"}
+          ✨ Ask Your Stylist
         </button>
         <button
           onClick={() => setShowAddForm(true)}
@@ -138,33 +123,6 @@ function Items() {
         <p className="mb-4 px-4 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm">
           {error}
         </p>
-      )}
-
-      {suggestions && (
-        <div className="mb-6 space-y-3">
-          <h3 className="font-semibold text-slate-700">Outfit Ideas</h3>
-          {suggestions.map((outfit, index) => (
-            <div
-              key={index}
-              className="bg-white border border-violet-200 rounded-xl shadow-sm p-4"
-            >
-              <p className="font-semibold text-violet-700 mb-2">
-                Outfit {index + 1}
-              </p>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {outfit.items.map((item) => (
-                  <span
-                    key={item.id}
-                    className="px-2 py-1 bg-violet-50 text-violet-700 rounded-lg text-sm"
-                  >
-                    {item.name}
-                  </span>
-                ))}
-              </div>
-              <p className="text-slate-600 text-sm">{outfit.description}</p>
-            </div>
-          ))}
-        </div>
       )}
 
       {showAddForm && (

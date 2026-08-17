@@ -14,6 +14,7 @@ import Navbar from "./components/Navbar";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Stylist from "./pages/Stylist";
 
 function Home() {
   const { token } = useAuth();
@@ -120,6 +121,14 @@ function App() {
             <PublicOnlyRoute>
               <ResetPassword />
             </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/stylist"
+          element={
+            <ProtectedRoute>
+              <Stylist />
+            </ProtectedRoute>
           }
         />
       </Routes>

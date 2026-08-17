@@ -35,6 +35,9 @@ function Navbar() {
       <Link to="/profile" className={linkClasses}>
         Profile
       </Link>
+      <Link to="/stylist" className={linkClasses}>
+        Stylist
+      </Link>
 
       <div className="ml-auto flex items-center gap-3">
         <span className="text-slate-700 font-medium">{user.name}</span>

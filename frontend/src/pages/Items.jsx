@@ -12,6 +12,8 @@ function Items() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [postingItem, setPostingItem] = useState(null);
+  const [suggestions, setSuggestions] = useState(null);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const authHeader = { headers: { Authorization: `Bearer ${token}` } };
   const multipartHeader = {
@@ -76,13 +78,27 @@ function Items() {
     }
   };
 
+  const handleGetSuggestions = async () => {
+    setLoadingSuggestions(true);
+    setSuggestions(null);
+    setError("");
+    try {
+      const res = await api.post("/stylist/suggest", {}, authHeader);
+      setSuggestions(res.data.outfits);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to get suggestions");
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
   const filteredItems = items.filter((item) => item.item_type === activeTab);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold text-slate-800 mb-6">My Items</h1>
 
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
         <button
           onClick={() => setActiveTab("WARDROBE")}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -104,6 +120,13 @@ function Items() {
           Wishlist
         </button>
         <button
+          onClick={handleGetSuggestions}
+          disabled={loadingSuggestions}
+          className="px-4 py-2 rounded-lg font-medium text-white bg-violet-600 hover:bg-violet-700 transition-colors disabled:opacity-50"
+        >
+          {loadingSuggestions ? "Thinking..." : "✨ Get Outfit Ideas"}
+        </button>
+        <button
           onClick={() => setShowAddForm(true)}
           className="ml-auto px-4 py-2 rounded-lg font-medium text-white bg-emerald-500 hover:bg-emerald-600 transition-colors"
         >
@@ -115,6 +138,33 @@ function Items() {
         <p className="mb-4 px-4 py-2 bg-rose-50 text-rose-600 rounded-lg text-sm">
           {error}
         </p>
+      )}
+
+      {suggestions && (
+        <div className="mb-6 space-y-3">
+          <h3 className="font-semibold text-slate-700">Outfit Ideas</h3>
+          {suggestions.map((outfit, index) => (
+            <div
+              key={index}
+              className="bg-white border border-violet-200 rounded-xl shadow-sm p-4"
+            >
+              <p className="font-semibold text-violet-700 mb-2">
+                Outfit {index + 1}
+              </p>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {outfit.items.map((item) => (
+                  <span
+                    key={item.id}
+                    className="px-2 py-1 bg-violet-50 text-violet-700 rounded-lg text-sm"
+                  >
+                    {item.name}
+                  </span>
+                ))}
+              </div>
+              <p className="text-slate-600 text-sm">{outfit.description}</p>
+            </div>
+          ))}
+        </div>
       )}
 
       {showAddForm && (

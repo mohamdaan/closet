@@ -113,3 +113,11 @@ create index idx_items_user_id on
    items (
       user_id
    );
+
+   CREATE TABLE outfit_suggestions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_ids INTEGER[] NOT NULL,
+    suggestion_text TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);

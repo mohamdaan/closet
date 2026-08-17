@@ -1,6 +1,6 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://closet-backend-hdr3.onrender.com/api",
+  baseURL: "http://localhost:4000/api",
 });
 export default api;

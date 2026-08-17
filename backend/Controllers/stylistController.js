@@ -135,6 +135,7 @@ const chat = async (req, res) => {
     );
 
     const items = itemsResult.rows;
+    const itemsById = Object.fromEntries(items.map((item) => [item.id, item]));
 
     const itemsList = items
       .map(
@@ -145,13 +146,26 @@ const chat = async (req, res) => {
       )
       .join("\n");
 
-    const systemPrompt = `You are a friendly personal stylist chatbot. The user's wardrobe (each item labeled with its id) is:\n${itemsList}\n\nWhen you suggest a specific outfit, always end your reply with a line in this exact format so the app can display it:\nOUTFIT_ITEMS: [comma-separated item ids, e.g. 3,7]\n\nOnly include that line when you're recommending a specific combination of items. For general conversation or questions, just reply normally without that line.`;
+    const systemPrompt = `You are a friendly personal stylist chatbot. The user's wardrobe (each item labeled with its id) is:\n${itemsList}\n\nIMPORTANT: Any time you recommend a specific outfit or combination of items, you MUST end your response with exactly one line in this format, with nothing after it:\nOUTFIT_ITEMS: 3,7\n\nUse the actual ids from the wardrobe list above, comma-separated. This line is required every time you mention specific items together as an outfit, even in casual conversation. If you are not recommending specific items, omit this line entirely.`;
+
+    const reinforcedMessages = messages.map((msg, index) => {
+      if (index === messages.length - 1 && msg.role === "user") {
+        return {
+          role: msg.role,
+          content: `${msg.content}\n\n(Reminder: if recommending an outfit, end with "OUTFIT_ITEMS: id,id,id" using real ids from the wardrobe.)`,
+        };
+      }
+      return msg;
+    });
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_tokens: 800,
       temperature: 0.8,
-      messages: [{ role: "system", content: systemPrompt }, ...messages],
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...reinforcedMessages,
+      ],
     });
 
     const replyText = completion.choices[0].message.content;
@@ -164,10 +178,11 @@ const chat = async (req, res) => {
         .split(",")
         .map((id) => parseInt(id.trim()))
         .filter(Boolean);
-      const itemsById = Object.fromEntries(
-        items.map((item) => [item.id, item])
-      );
       outfitItems = ids.map((id) => itemsById[id]).filter(Boolean);
+    } else {
+      outfitItems = items.filter((item) =>
+        replyText.toLowerCase().includes(item.name.toLowerCase())
+      );
     }
 
     const displayText = replyText.replace(/OUTFIT_ITEMS:.*$/s, "").trim();

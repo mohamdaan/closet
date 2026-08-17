@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import PasswordInput from "../components/PasswordInput";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -46,12 +47,9 @@ function Login() {
             onChange={(e) => setEmail(e.target.value)}
             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
-          <input
-            type="password"
-            placeholder="Password"
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </div>
 
@@ -61,6 +59,15 @@ function Login() {
         >
           Log In
         </button>
+
+        <p className="text-sm text-slate-500 mt-2 text-center">
+          <Link
+            to="/forgot-password"
+            className="text-indigo-600 hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </p>
 
         <p className="text-sm text-slate-500 mt-4 text-center">
           Don't have an account?{" "}

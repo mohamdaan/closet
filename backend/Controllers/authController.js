@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
-const pool = require("../db/db");
 const jwt = require("jsonwebtoken");
+const pool = require("../db/db");
+const { sendWelcomeEmail, sendPasswordResetEmail } = require("../utils/email");
 
 const register = async (req, res) => {
   const { name, username, email, password } = req.body;
@@ -19,15 +20,15 @@ const register = async (req, res) => {
       [name, username, email, hashedPassword]
     );
 
+    sendWelcomeEmail(email, name);
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    // Postgres error code for "unique constraint vfiolated"
     if (error.code === "23505") {
       return res
         .status(409)
         .json({ error: "Username or email already exists" });
     }
-
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
@@ -112,4 +113,77 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, changePassword };
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, name FROM users WHERE email = $1`,
+      [email]
+    );
+    const user = result.rows[0];
+
+    if (user) {
+      const resetToken = jwt.sign(
+        { userId: user.id, purpose: "password_reset" },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
+      );
+
+      const resetLink = `https://closet-rust-five.vercel.app/reset-password?token=${resetToken}`;
+      sendPasswordResetEmail(email, resetLink);
+    }
+
+    res.json({ message: "If that email exists, a reset link has been sent." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: "Token and new password are required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.purpose !== "password_reset") {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query(`UPDATE users SET password = $1 WHERE id = $2`, [
+      hashedPassword,
+      decoded.userId,
+    ]);
+
+    res.json({ message: "Password reset successfully" });
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ error: "Reset link has expired" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ error: "Invalid reset link" });
+    }
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+};

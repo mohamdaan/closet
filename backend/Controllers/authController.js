@@ -134,7 +134,7 @@ const forgotPassword = async (req, res) => {
         { expiresIn: "15m" }
       );
 
-      const resetLink = `https://closet-closet4.vercel.app/reset-password?token=${resetToken}`;
+      const resetLink = `https://closet-rust-five.vercel.app/reset-password?token=${resetToken}`;
       sendPasswordResetEmail(email, resetLink);
     }
 
